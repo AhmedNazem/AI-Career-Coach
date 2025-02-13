@@ -53,7 +53,7 @@ export async function updateUser(data) {
       { timeout: 10000 } // Extended timeout (default is 5000)
     );
 
-    return result.updatedUser;
+    return { success: true, ...result };
   } catch (error) {
     console.error("Error updating user and industry:", error.message);
     throw new Error("Failed to update profile");

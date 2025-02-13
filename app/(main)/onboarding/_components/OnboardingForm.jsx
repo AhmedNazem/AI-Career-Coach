@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { onboardingSchema } from "@/app/lib/schema";
@@ -24,7 +24,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import useFetch from "@/hooks/useFetch";
+import { updateUser } from "@/actions/user";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 const OnboardingForm = ({ industries }) => {
+  const {
+    loading: updateLoading,
+    fn: updateUserFn,
+    data: updateResult,
+  } = useFetch(updateUser);
   const [selectedIndustry, setSelectedIndustry] = useState(null);
   const router = useRouter();
   const {
@@ -38,8 +47,25 @@ const OnboardingForm = ({ industries }) => {
   });
   const watchIndustry = watch("industry");
   const onSubmit = async (values) => {
-    console.log(values);
+    try {
+      const formattedIndustry = `${values.industry}-${values.subIndustry
+        .toLowerCase()
+        .replace(/ /g, "-")}`;
+      await updateUserFn({
+        ...values,
+        industry: formattedIndustry,
+      });
+    } catch (error) {
+      console.error("Onboarding error ", error);
+    }
   };
+  useEffect(() => {
+    if (updateResult?.success && !updateLoading) {
+      toast.success("Profile completed successfully");
+      router.push("/dashboard");
+      router.refresh();
+    }
+  }, [updateResult, updateLoading]);
   return (
     <div className="flex items-center justify-center bg-background">
       <Card className="w-full max-w-lg mt-10 mx-2">
@@ -164,8 +190,19 @@ const OnboardingForm = ({ industries }) => {
               )}
             </div>
 
-            <Button type="submit" className="w-full mt-5">
-              Complete Profile
+            <Button
+              type="submit"
+              disabled={updateLoading}
+              className="w-full mt-5"
+            >
+              {updateLoading ? (
+                <>
+                  <Loader2 className="mt-2 size-4 animate-spin" />
+                  Saving
+                </>
+              ) : (
+                " Complete Profile"
+              )}
             </Button>
           </form>
         </CardContent>
