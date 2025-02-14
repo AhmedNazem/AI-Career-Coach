@@ -8,6 +8,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
 });
+
 export const generateAiInsights = async (industry) => {
   const prompt = `
     Analyze the current state of the ${industry} industry and provide insights in ONLY the following JSON format without any additional notes or explanations:
@@ -28,32 +29,39 @@ export const generateAiInsights = async (industry) => {
     Growth rate should be a percentage.
     Include at least 5 skills and trends.
   `;
+
   const result = await model.generateContent(prompt);
   const response = result.response;
   const text = response.text();
   const cleanText = text.replace(/```(?:json)?\n?/g, "").trim();
+
   return JSON.parse(cleanText);
 };
+
 export async function getIndustryInsights() {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
-  });
-  if (!user) throw new Error("user not found");
 
-  if (!user.industryInsight) {
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    include: { industryInsight: true },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  let industryInsight = user.industryInsight;
+
+  if (!industryInsight) {
     const insights = await generateAiInsights(user.industry);
-    const industryInsight = db.industryInsight.create({
+
+    industryInsight = await db.industryInsight.create({
       data: {
         industry: user.industry,
         ...insights,
-        nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       },
     });
-    return industryInsight;
   }
-  return user.industryInsight;
+
+  return industryInsight;
 }
