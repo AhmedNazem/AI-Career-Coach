@@ -10,32 +10,26 @@ const model = genAI.getGenerativeModel({
 });
 
 export async function saveResume(content) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-  if (!user) throw new Error("User not found");
-
   try {
-    const resume = await db.resume.upsert({
-      where: {
-        userId: user.id,
-      },
-      update: {
-        content,
-      },
-      create: {
-        userId: user.id,
-        content,
-      },
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized: No user ID found");
+
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
     });
+    if (!user) throw new Error("User not found in the database");
+
+    const resume = await db.resume.upsert({
+      where: { userId: user.id },
+      update: { content },
+      create: { userId: user.id, content },
+    });
+
     revalidatePath("/resume");
     return resume;
   } catch (error) {
-    console.error("Error saving resume:", error.message);
-    throw new Error("Failed to save resume");
+    console.error("Error saving resume:", error);
+    throw new Error("Failed to save resume. Please try again later.");
   }
 }
 
