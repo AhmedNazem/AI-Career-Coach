@@ -7,13 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import useFetch from "@/hooks/useFetch";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, Save } from "lucide-react";
+import { AlertTriangle, Download, Edit, Monitor, Save } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { EntryForm } from "./EntryForm";
+import { entriesToMarkdown } from "@/app/lib/helper";
+import MDEditor from "@uiw/react-md-editor";
+import { useUser } from "@clerk/nextjs";
 
 const ResumeBuilder = ({ initialContent }) => {
   const [activeTab, setActiveTab] = useState("edit");
+  const [resumeMode, setResumeMode] = useState("preview");
+  const [previewContent, setPreviewContent] = useState(initialContent);
+  const { user } = useUser();
   const {
     control,
     register,
@@ -41,6 +47,40 @@ const ResumeBuilder = ({ initialContent }) => {
   useEffect(() => {
     if (initialContent) setActiveTab("preview");
   }, [initialContent]);
+  useEffect(() => {
+    if (activeTab === "edit") {
+      const newContent = getCombinedContent();
+      setPreviewContent(newContent ? newContent : initialContent);
+    }
+  }, [formValues, activeTab]);
+  const getContactMarkdown = () => {
+    const { contactInfo } = formValues;
+    const parts = [];
+    if (contactInfo.email) parts.push(`📧 ${contactInfo.email}`);
+    if (contactInfo.mobile) parts.push(`📱 ${contactInfo.mobile}`);
+    if (contactInfo.linkedin)
+      parts.push(`💼 [LinkedIn] ${contactInfo.linkedin}`);
+    if (contactInfo.twitter)
+      parts.push(`🐦 [Twitter] (${contactInfo.twitter}) `);
+    return parts.length > 0
+      ? `## <div align="center">${user.fullName}</div>
+\n\n<div align="center">\n\n${parts.join(" | ")}\n\n</div>
+    `
+      : "";
+  };
+  const getCombinedContent = () => {
+    const { summary, skills, experience, education, projects } = formValues;
+    return [
+      getContactMarkdown(),
+      summary && `## Professional Summary\n\n${summary}`,
+      skills && `## Skills \n\n${skills}`,
+      entriesToMarkdown(experience, "Work Experience"),
+      entriesToMarkdown(education, "Education"),
+      entriesToMarkdown(projects, "Projects"),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  };
   const onSubmit = async (data) => {};
   return (
     <div className="space-y-4">
@@ -230,7 +270,44 @@ const ResumeBuilder = ({ initialContent }) => {
             </div>
           </form>
         </TabsContent>
-        <TabsContent value="preview">Change your password here.</TabsContent>
+        <TabsContent value="preview">
+          <Button
+            onClick={() =>
+              setResumeMode(resumeMode === "preview" ? "edit" : "preview")
+            }
+            variant="link"
+            type="button"
+            className="mb-2"
+          >
+            {resumeMode === "preview" ? (
+              <>
+                <Edit className="size-4" />
+                Edit Resume
+              </>
+            ) : (
+              <>
+                <Monitor className="size-4" />
+                Show Preview
+              </>
+            )}
+          </Button>
+          {resumeMode !== "preview" && (
+            <div className="flex p-3 gap-2 items-center border-2 border-yellow-600 text-yellow-600 rounded mb-2">
+              <AlertTriangle className="size-5" />
+              <span className="text-sm">
+                You will lose edited markdown if you update the form data
+              </span>
+            </div>
+          )}
+          <div className="border rounded-md">
+            <MDEditor
+              value={previewContent}
+              onChange={setPreviewContent}
+              height={800}
+              preview={resumeMode}
+            />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
