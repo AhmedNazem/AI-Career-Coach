@@ -59,7 +59,7 @@ const Header = async () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Link
-                    href={"/ai-cover-letter"}
+                    href={"/aiCoverLetter"}
                     className="flex items-center gap-2"
                   >
                     <PenBox className="size-4" />
