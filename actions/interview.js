@@ -16,10 +16,14 @@ export async function generateQuiz() {
   if (!process.env.GEMINI_API_KEY) throw new Error("Missing Gemini API Key");
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+<<<<<<< HEAD
   const model = genAI.getGenerativeModel(
     { model: "gemini-2.5-flash" },
     { apiVersion: "v1beta" }
   );
+=======
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+>>>>>>> eccc640a0c262ef8dc1bd9053d2ec2305ae267d6
 
   try {
     const prompt = `
@@ -69,10 +73,14 @@ export async function saveQuizResult(questions, answers, score) {
   if (!process.env.GEMINI_API_KEY) throw new Error("Missing Gemini API Key");
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+<<<<<<< HEAD
   const model = genAI.getGenerativeModel(
     { model: "gemini-2.5-flash" },
     { apiVersion: "v1beta" }
   );
+=======
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+>>>>>>> eccc640a0c262ef8dc1bd9053d2ec2305ae267d6
 
   const questionResults = questions.map((q, index) => ({
     question: q.question,
